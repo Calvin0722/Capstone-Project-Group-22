@@ -161,3 +161,6 @@ cython_debug/
 
 # Ignore data file
 data
+
+# Ignore idea
+.idea

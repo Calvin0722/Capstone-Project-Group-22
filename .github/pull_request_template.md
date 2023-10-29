@@ -1,23 +1,13 @@
 # Description
 
-<!--
-Thank you for your interest in sending a pull request. Please make sure to check the contribution guidelines.
-
-Link: https://isaac-orbit.github.io/orbit/source/refs/contributing.html
--->
-
 Please include a summary of the change and which issue is fixed. Please also include relevant motivation and context.
 List any dependencies that are required for this change.
 
 Fixes # (issue)
 
-<!-- As a practice, it is recommended to open an issue to have discussions on the proposed pull request.
-This makes it easier for the community to keep track of what is being developed or added, and if a given feature
-is demanded by more than one party. -->
-
 ## Type of change
 
-<!-- As you go through the list, delete the ones that are not applicable. -->
+<!-- As you go through the list, check the ones that are applicable. -->
 
 - [ ] Bug fix (non-breaking change which fixes an issue)
 - [ ] New feature (non-breaking change which adds functionality)

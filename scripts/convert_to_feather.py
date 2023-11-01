@@ -26,8 +26,7 @@ def main():
     parser.add_argument("--root", "-r", type=str, required=True)
     parser.add_argument("--logistics_detail", "-l", type=str, default="msom_logistic_detail")
     parser.add_argument("--order_data", "-o", type=str, default="msom_order_data")
-    parser.add_argument("--indices", "-i", nargs="+", type=int, default=[i for i in range(1, 8)])
-    parser.add_argument('--feather', "-f", action=argparse.BooleanOptionalAction)
+    parser.add_argument("--indices", "-i", nargs="+", default=[i for i in range(1, 8)])
 
     args = parser.parse_args()
     # logging.getLogger().setLevel(logging.INFO)
@@ -39,27 +38,23 @@ def main():
 
     for index in args.indices:
         logging.info(f'started reading index {index}')
-        if args.feather:
-            logistics_detail_df = pd.read_feather(
-                os.path.join(args.root, f'data_{index}', f'{args.logistics_detail}_{index}.feather'))
-            order_data_df = pd.read_feather(
-                os.path.join(args.root, f'data_{index}', f'{args.order_data}_{index}.feather'))
-        else:
-            logistics_detail_df = pd.read_csv(
-                os.path.join(args.root, f'data_{index}', f'{args.logistics_detail}_{index}.csv'),
-                names=LOGISTICS_COLUMN_NAMES)
-            order_data_df = pd.read_csv(
-                os.path.join(args.root, f'data_{index}', f'{args.order_data}_{index}.csv'),
-                names=ORDER_COLUMN_NAMES)
-        logging.info(f'finished reading index {index}')
-        data_cleaner = DataCleaner(logistics_detail_data_df=logistics_detail_df, order_data_df=order_data_df)
-        data_cleaner.clean_up()
-        data_cleaner.export_data(args.root, index)
+        logistics_data_df = pd.read_csv(
+            os.path.join(args.root, f'data_{index}', f'{args.logistics_detail}_{index}.csv'),
+            names=LOGISTICS_COLUMN_NAMES)
+        order_data_df = pd.read_csv(
+            os.path.join(args.root, f'data_{index}', f'{args.order_data}_{index}.csv'),
+            names=ORDER_COLUMN_NAMES)
 
-        logging.info(f'started cleanup for index {index}')
-        del data_cleaner
-        gc.collect()
-        logging.info(f'finished cleanup for index {index}')
+        logistic_data_file_dir = os.path.join(args.root, f'data_{index}', f'{args.logistics_detail}_{index}.feather')
+        order_data_file_dir = os.path.join(args.root, f'data_{index}', f'{args.order_data}_{index}.feather')
+
+        logging.info(f'started exporting logistics data to {logistic_data_file_dir}')
+        logistics_data_df.to_feather(logistic_data_file_dir)
+        logging.info('finished exporting logistics data')
+
+        logging.info(f'started exporting order data to {order_data_file_dir}')
+        order_data_df.to_feather(order_data_file_dir)
+        logging.info('finished exporting order data')
 
 
 if __name__ == "__main__":

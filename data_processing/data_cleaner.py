@@ -1,3 +1,4 @@
+import inspect
 import logging
 import os.path
 
@@ -45,9 +46,41 @@ class DataCleaner:
         Convert the timestamps in dataframes into datetime format
         """
         logging.info("started removing order ids")
+        original_order_count = self.order_data_df.shape[0]
         self.order_data_df = self.order_data_df[~self.order_data_df[ORDER_ID].isin(order_ids)]
         self.logistics_data_df = self.logistics_data_df[~self.logistics_data_df[ORDER_ID].isin(order_ids)]
-        logging.info("finished removing order ids")
+        cleaned_order_count = self.order_data_df.shape[0]
+        logging.info(f'finished removing order ids, removed {(1 - cleaned_order_count/original_order_count)*100}% of '
+                     f'order for {inspect.stack()[1].function}')
+
+    def drop_duplicates(self):
+        """
+        Drop duplicate rows from logistics data and order data
+        """
+        logging.info("started removing order ids")
+        original_order_count = self.order_data_df.shape[0]
+        original_logistics_count = self.logistics_data_df.shape[0]
+        self.order_data_df = self.order_data_df.drop_duplicates()
+        self.logistics_data_df = self.logistics_data_df.drop_duplicates()
+        cleaned_order_count = self.order_data_df.shape[0]
+        cleaned_logistics_count = self.logistics_data_df.shape[0]
+        logging.info(
+            f'finished dropping duplicates, removed {(1 - cleaned_order_count/original_order_count)*100}% of orders')
+        logging.info(
+            f'finished dropping duplicates, removed {(1 - cleaned_logistics_count/original_logistics_count)*100}% of '
+            f'logistics data')
+
+    def remove_trade_success_actions(self):
+        """
+        Removes all trade success actions from logistics detail.
+        """
+        logging.info("started removing trade success actions")
+        original_logistics_count = self.logistics_data_df.shape[0]
+        self.logistics_data_df = self.logistics_data_df[self.logistics_data_df[ACTION] != TRADE_SUCCESS]
+        cleaned_logistics_count = self.logistics_data_df.shape[0]
+        logging.info(
+            f'finished dropping trade success actions, removed '
+            f'{(1 - cleaned_logistics_count/original_logistics_count)*100}% of logistics data')
 
     def remove_failed_delivery(self):
         """
@@ -104,7 +137,8 @@ class DataCleaner:
         logging.info("started removing shipments with actions reported after the sign action")
         self.convert_timestamp_to_datetime()
         signed_actions = self.logistics_data_df[self.logistics_data_df[ACTION] == SIGNED]
-        joined_df = self.logistics_data_df.join(signed_actions, on=ORDER_ID, lsuffix='_actions', rsuffix='_signed')
+        joined_df = self.logistics_data_df.join(signed_actions, on=ORDER_ID, lsuffix='_actions', rsuffix='_signed',
+                                                how='left')
         with_action_after_sign_order = joined_df[
             joined_df[f'{TIMESTAMP_DATE_TIME}_actions'] > joined_df[f'{TIMESTAMP_DATE_TIME}_signed']]
         self.remove_order_ids(with_action_after_sign_order[f'{ORDER_ID}_actions'])
@@ -116,11 +150,9 @@ class DataCleaner:
         """
         logging.info("started removing shipments without exactly one sign action")
         self.convert_timestamp_to_datetime()
-        signed_actions = self.logistics_data_df[self.logistics_data_df[ACTION] == SIGNED]
-        signed_actions_grouped_by_order_id = signed_actions.groupby([ORDER_ID])
-        signed_action_counts = signed_actions_grouped_by_order_id.size().reset_index(name='count')
-        without_exactly_one_sign_action_order = signed_action_counts[signed_action_counts['count'] != 1]
-        self.remove_order_ids(without_exactly_one_sign_action_order[ORDER_ID])
+        action_counts = self.logistics_data_df.groupby([ORDER_ID, ACTION]).size().unstack(fill_value=0)
+        without_exactly_one_sign_action_order = action_counts[action_counts[SIGNED] != 1].index
+        self.remove_order_ids(without_exactly_one_sign_action_order)
         logging.info("finished removing shipments without exactly one sign action")
 
     def remove_without_exactly_one_consign_action(self):
@@ -129,11 +161,9 @@ class DataCleaner:
         """
         logging.info("started removing shipments without exactly one consign action")
         self.convert_timestamp_to_datetime()
-        consign_actions = self.logistics_data_df[self.logistics_data_df[ACTION] == CONSIGN]
-        consign_actions_grouped_by_order_id = consign_actions.groupby([ORDER_ID])
-        consign_action_counts = consign_actions_grouped_by_order_id.size().reset_index(name='count')
-        without_exactly_one_consign_action_order = consign_action_counts[consign_action_counts['count'] != 1]
-        self.remove_order_ids(without_exactly_one_consign_action_order[ORDER_ID])
+        action_counts = self.logistics_data_df.groupby([ORDER_ID, ACTION]).size().unstack(fill_value=0)
+        without_exactly_one_consign_action_order = action_counts[action_counts[CONSIGN] != 1].index
+        self.remove_order_ids(without_exactly_one_consign_action_order)
         logging.info("finished removing shipments without exactly one consign action")
 
     def remove_without_slowest_shipping_speed(self):
@@ -212,14 +242,16 @@ class DataCleaner:
         logging.info('started data cleanup')
         logging.info(f'original logistics detail shape: {self.logistics_data_df.shape}')
         logging.info(f'original order data shape: {self.order_data_df.shape}')
-        self.remove_failed_delivery()
         self.remove_not_cainiao()
         self.remove_without_shipment_score()
+        self.remove_trade_success_actions()
+        self.drop_duplicates()
+        self.remove_failed_delivery()
         self.remove_without_shipment_times()
         self.remove_with_action_before_order()
-        self.remove_with_action_after_sign()
         self.remove_without_exactly_one_sign_action()
         self.remove_without_exactly_one_consign_action()
+        self.remove_with_action_after_sign()
         self.remove_without_slowest_shipping_speed()
         self.remove_with_multiple_shippers()
         self.remove_with_multiple_product_types()

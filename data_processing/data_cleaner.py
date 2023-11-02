@@ -70,6 +70,18 @@ class DataCleaner:
             f'finished dropping duplicates, removed {(1 - cleaned_logistics_count/original_logistics_count)*100}% of '
             f'logistics data')
 
+    def remove_trade_success_actions(self):
+        """
+        Removes all trade success actions from logistics detail.
+        """
+        logging.info("started removing trade success actions")
+        original_logistics_count = self.logistics_data_df.shape[0]
+        self.logistics_data_df = self.logistics_data_df[self.logistics_data_df[ACTION] != TRADE_SUCCESS]
+        cleaned_logistics_count = self.logistics_data_df.shape[0]
+        logging.info(
+            f'finished dropping trade success actions, removed '
+            f'{(1 - cleaned_logistics_count/original_logistics_count)*100}% of logistics data')
+
     def remove_failed_delivery(self):
         """
         Removes all shipments with a failure action.
@@ -125,7 +137,8 @@ class DataCleaner:
         logging.info("started removing shipments with actions reported after the sign action")
         self.convert_timestamp_to_datetime()
         signed_actions = self.logistics_data_df[self.logistics_data_df[ACTION] == SIGNED]
-        joined_df = self.logistics_data_df.join(signed_actions, on=ORDER_ID, lsuffix='_actions', rsuffix='_signed')
+        joined_df = self.logistics_data_df.join(signed_actions, on=ORDER_ID, lsuffix='_actions', rsuffix='_signed',
+                                                how='left')
         with_action_after_sign_order = joined_df[
             joined_df[f'{TIMESTAMP_DATE_TIME}_actions'] > joined_df[f'{TIMESTAMP_DATE_TIME}_signed']]
         self.remove_order_ids(with_action_after_sign_order[f'{ORDER_ID}_actions'])
@@ -231,13 +244,14 @@ class DataCleaner:
         logging.info(f'original order data shape: {self.order_data_df.shape}')
         self.remove_not_cainiao()
         self.remove_without_shipment_score()
+        self.remove_trade_success_actions()
         self.drop_duplicates()
         self.remove_failed_delivery()
         self.remove_without_shipment_times()
         self.remove_with_action_before_order()
-        self.remove_with_action_after_sign()
         self.remove_without_exactly_one_sign_action()
         self.remove_without_exactly_one_consign_action()
+        self.remove_with_action_after_sign()
         self.remove_without_slowest_shipping_speed()
         self.remove_with_multiple_shippers()
         self.remove_with_multiple_product_types()

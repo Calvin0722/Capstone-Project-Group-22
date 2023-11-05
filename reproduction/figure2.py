@@ -1,7 +1,4 @@
 import pandas as pd
-# %pip install "modin[ray]" # Install Modin dependencies and Ray.
-# import modin.pandas as pd
-# import ray
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
@@ -13,14 +10,14 @@ from reproduction import *
 
 def main():
     # Load logistics data
-    file_paths = [f'./cleaned_data/data_{i}/cleaned_logistics_detail_{i}.feather' for i in range(1, 8)]
+    file_paths = [f'./data/cleaned/data_{i}/cleaned_logistics_detail_{i}.feather' for i in range(1, 8)]
     full_logistics_data = []
     for file_path in file_paths:
         full_logistics_data.append(pd.read_feather(file_path))
     full_logistics_data_df = pd.concat(full_logistics_data)
 
     # Load order data
-    file_paths = [f'./cleaned_data/data_{i}/cleaned_order_data_{i}.feather' for i in range(1, 8)]
+    file_paths = [f'./data/cleaned/data_{i}/cleaned_order_data_{i}.feather' for i in range(1, 8)]
     full_order_data = []
     for file_path in file_paths:
         full_order_data.append(pd.read_feather(file_path))

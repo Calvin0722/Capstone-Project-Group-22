@@ -19,8 +19,8 @@ def compute_action_time(logistics_data: pd.DataFrame, order_data: pd.DataFrame) 
     action_time = action_time[action_time["action_time"] <= 1]
     return action_time
 
-
-def compute_action_time_distribution_difference(logistics_data: pd.DataFrame, order_data: pd.DataFrame, bin_size: float = 0.05) -> pd.DataFrame:
+def compute_action_time_distribution_difference(
+        logistics_data: pd.DataFrame, order_data: pd.DataFrame, bin_size: float = 0.1) -> pd.DataFrame:
     action_time_df = compute_action_time(logistics_data, order_data)
 
     # Create intervals for action_time
@@ -31,18 +31,15 @@ def compute_action_time_distribution_difference(logistics_data: pd.DataFrame, or
     action_time_df.loc[action_time_df['logistics_review_score'] <= 1, 'logistics_review_score'] = 2
 
     # Calculate conditional PDFs
-    conditional_pdfs = action_time_df.groupby(['logistics_review_score', 'action', 'action_time_interval', 'order_id']).size()
-    conditional_pdfs = conditional_pdfs.groupby(
-        ['logistics_review_score', 'action_time_interval', 'action']).mean().rename('conditional_density')
-    conditional_pdfs = conditional_pdfs / conditional_pdfs.groupby(['action', 'logistics_review_score']).transform(
-        'sum')
+    conditional_pdfs = (action_time_df.groupby(['logistics_review_score', 'action', 'action_time_interval'])
+                        .size().rename('conditional_density'))
+    conditional_pdfs = conditional_pdfs / conditional_pdfs.groupby(['action', 'logistics_review_score']).transform('sum')
     conditional_pdfs = conditional_pdfs.reset_index()
 
     # Calculate unconditional PDFs
-    unconditional_pdfs = action_time_df.groupby(['action_time_interval', 'action', 'order_id']).size()
-    unconditional_pdfs = unconditional_pdfs.groupby(['action_time_interval', 'action']).mean().rename(
+    unconditional_pdfs = action_time_df.groupby(['action_time_interval', 'action']).size().rename(
         'unconditional_density')
-    unconditional_pdfs = unconditional_pdfs / unconditional_pdfs.groupby('action').transform('sum')
+    unconditional_pdfs = unconditional_pdfs / unconditional_pdfs.groupby(['action']).transform('sum')
     unconditional_pdfs = unconditional_pdfs.reset_index()
 
     # Merge to have both conditional and unconditional densities in the same dataframe

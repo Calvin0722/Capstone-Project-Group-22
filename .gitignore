@@ -161,6 +161,7 @@ cython_debug/
 
 # Ignore data file
 data
+cleaned_data
 
 # Ignore idea
 .idea

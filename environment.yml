@@ -11,5 +11,7 @@ dependencies:
   - torchtext
   - pandas
   - pyarrow
+  - seaborn
+  - scipy
 #  - pip:
 #    - torchviz

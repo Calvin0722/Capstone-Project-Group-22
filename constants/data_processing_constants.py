@@ -1,6 +1,6 @@
 import pandas as pd
 
-FIRST_DAY = pd.Timestamp("2017-01-01")
+DAY_ONE = pd.Timestamp("2017-01-01")
 
 # pd actions
 LEFT = 'left'

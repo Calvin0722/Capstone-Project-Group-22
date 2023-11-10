@@ -115,7 +115,7 @@ def add_dummy_variables(df: pd.DataFrame, item_df: pd.DataFrame):
     scan_counts = df[df[ACTION] == SENT_SCAN].groupby(ORDER_ID).size().rename(SCAN_COUNT).reset_index()
     action_counts = df.groupby([ORDER_ID, ACTION_TIME_INTERVAL], observed=True).size().rename(ACTION_COUNT)\
         .reset_index()
-    df[DAYS] = (df[ORDER_TIME] - FIRST_DAY).dt.days
+    df[DAYS] = (df[ORDER_TIME] - DAY_ONE).dt.days
     df[WEEK_COUNT] = df[DAYS] // 7
     df[DAY_OF_WEEK] = df[DAYS] % 7
 

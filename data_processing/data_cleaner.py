@@ -31,14 +31,18 @@ class DataCleaner:
             logging.info("started converting logistics data timestamp to datetime")
             self.logistics_data_df[TIMESTAMP_DATE_TIME] = pd.to_datetime(
                 self.logistics_data_df[TIMESTAMP], errors='coerce')
-            null_timestamps = self.logistics_data_df[self.logistics_data_df[TIMESTAMP_DATE_TIME].isnull()]
-            self.remove_order_ids(null_timestamps[ORDER_ID])
+            invalid_timestamps = self.logistics_data_df[
+                self.logistics_data_df[TIMESTAMP_DATE_TIME].isnull() | self.logistics_data_df[
+                    TIMESTAMP_DATE_TIME] < DAY_ONE]
+            self.remove_order_ids(invalid_timestamps[ORDER_ID])
         if PAY_TIMESTAMP_DATETIME not in self.order_data_df.columns:
             logging.info("started converting order data payment timestamp to datetime")
             self.order_data_df[PAY_TIMESTAMP_DATETIME] = pd.to_datetime(
                 self.order_data_df[PAY_TIMESTAMP], errors='coerce')
-            null_pay_timestamps = self.order_data_df[self.order_data_df[PAY_TIMESTAMP_DATETIME].isnull()]
-            self.remove_order_ids(null_pay_timestamps[ORDER_ID])
+            invalid_pay_timestamps = self.order_data_df[
+                self.order_data_df[PAY_TIMESTAMP_DATETIME].isnull() | self.order_data_df[
+                    PAY_TIMESTAMP_DATETIME] < DAY_ONE]
+            self.remove_order_ids(invalid_pay_timestamps[ORDER_ID])
         logging.info("finished converting timestamp to datetime")
 
     def remove_order_ids(self, order_ids: pd.Series):
@@ -50,8 +54,9 @@ class DataCleaner:
         self.order_data_df = self.order_data_df[~self.order_data_df[ORDER_ID].isin(order_ids)]
         self.logistics_data_df = self.logistics_data_df[~self.logistics_data_df[ORDER_ID].isin(order_ids)]
         cleaned_order_count = self.order_data_df.shape[0]
-        logging.info(f'finished removing order ids, removed {(1 - cleaned_order_count/original_order_count)*100}% of '
-                     f'order for {inspect.stack()[1].function}')
+        logging.info(
+            f'finished removing order ids, removed {(1 - cleaned_order_count / original_order_count) * 100}% of '
+            f'order for {inspect.stack()[1].function}')
 
     def drop_duplicates(self):
         """
@@ -65,9 +70,9 @@ class DataCleaner:
         cleaned_order_count = self.order_data_df.shape[0]
         cleaned_logistics_count = self.logistics_data_df.shape[0]
         logging.info(
-            f'finished dropping duplicates, removed {(1 - cleaned_order_count/original_order_count)*100}% of orders')
+            f'finished dropping duplicates, removed {(1 - cleaned_order_count / original_order_count) * 100}% of orders')
         logging.info(
-            f'finished dropping duplicates, removed {(1 - cleaned_logistics_count/original_logistics_count)*100}% of '
+            f'finished dropping duplicates, removed {(1 - cleaned_logistics_count / original_logistics_count) * 100}% of '
             f'logistics data')
 
     def remove_trade_success_actions(self):
@@ -80,7 +85,7 @@ class DataCleaner:
         cleaned_logistics_count = self.logistics_data_df.shape[0]
         logging.info(
             f'finished dropping trade success actions, removed '
-            f'{(1 - cleaned_logistics_count/original_logistics_count)*100}% of logistics data')
+            f'{(1 - cleaned_logistics_count / original_logistics_count) * 100}% of logistics data')
 
     def remove_failed_delivery(self):
         """
@@ -205,11 +210,9 @@ class DataCleaner:
         """
         logging.info("started removing shipments with shipment times in excess of eight days")
         self.convert_timestamp_to_datetime()
-        signed_actions = self.logistics_data_df[self.logistics_data_df[ACTION] == SIGNED]
         consign_actions = self.logistics_data_df[self.logistics_data_df[ACTION] == CONSIGN]
-        joined_df = signed_actions.join(consign_actions, on=ORDER_ID, lsuffix='_sign', rsuffix='_consign')
-        joined_df["shipment_time"] = \
-            joined_df[f'{TIMESTAMP_DATE_TIME}_sign'] - joined_df[f'{TIMESTAMP_DATE_TIME}_consign']
+        joined_df = self.logistics_data_df.merge(consign_actions, on=ORDER_ID)
+        joined_df["shipment_time"] = joined_df[TIMESTAMP_DATE_TIME] - joined_df[PAY_TIMESTAMP_DATETIME]
 
         shipment_more_than_eight_days = joined_df[joined_df["shipment_time"].dt.days > 8]
         self.remove_order_ids(shipment_more_than_eight_days[f'{ORDER_ID}_consign'])

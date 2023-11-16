@@ -161,9 +161,12 @@ cython_debug/
 
 # Ignore data file
 data
+cleaned_data
 
-# Ignore idea
+# Ignore idea and vscode
 .idea
+.vscode
 
 # Ignore DS_Store
 **/.DS_Store
+.DS_Store

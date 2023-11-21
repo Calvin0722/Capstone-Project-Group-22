@@ -98,6 +98,11 @@ def compute_action_time_distribution_difference(
     return merged
 
 
+def filter_less_than_5000(df, field, assigned_value=-1):
+    less_than_5000 = df.groupby(field).filter(lambda x: len(x) < 5000)
+    df.loc[df[field].isin(less_than_5000[field]), field] = assigned_value
+
+
 def add_dummy_variables(df: pd.DataFrame, item_df: pd.DataFrame):
     """
     Add dummy variables to the dataframe, dummy variables include facility counts, arrive counts, depart counts,
@@ -132,6 +137,12 @@ def add_dummy_variables(df: pd.DataFrame, item_df: pd.DataFrame):
         .merge(receive_counts, on=ORDER_ID, how=LEFT) \
         .merge(scan_counts, on=ORDER_ID, how=LEFT) \
         .merge(action_counts, on=[ORDER_ID, ACTION_TIME_INTERVAL], how=LEFT)
+
+    filter_less_than_5000(item_df, BRAND_ID)
+    filter_less_than_5000(item_df, CATEGORY_ID)
+    filter_less_than_5000(item_df, MERCHANT_ID)
+    filter_less_than_5000(df, LOGISTIC_COMPANY_ID)
+    filter_less_than_5000(df, WEEK_COUNT)
 
     action_count_df = action_count_df.merge(item_df, on=[ITEM_ID, MERCHANT_ID], how=LEFT)
     action_count_df.fillna(0, inplace=True)

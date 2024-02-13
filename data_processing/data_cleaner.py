@@ -238,6 +238,25 @@ class DataCleaner:
         self.remove_order_ids(with_less_than_four_actions[ORDER_ID])
         logging.info("finished removing shipments with less than four posted actions")
 
+    def map_action_to_numeric(self):
+        """
+        Map actions from sting to numerical values
+        """
+        logging.info("started mapping action to numeric values")
+        mapping = {
+            CONSIGN: 0,
+            GOT: 1,
+            DEPARTURE: 2,
+            ARRIVAL: 2,
+            SENT_SCAN: 4,
+            SIGNED: 5,
+            TRADE_SUCCESS: 6,
+            FAILURE: 7
+        }
+        for value in mapping:
+            self.logistics_data_df.replace(to_replace=value, value=mapping[value])
+        logging.info("finished mapping action to numeric values")
+
     def clean_up(self):
         """
         Run data cleaning according to "Operational Transparency: Showing When Work Gets Done"
@@ -261,6 +280,7 @@ class DataCleaner:
         self.remove_shipment_time_more_than_eight_days()
         self.remove_more_than_ten_actions()
         self.remove_less_than_four_actions()
+        self.map_action_to_numeric()
         logging.info("finished data cleanup")
         logging.info(self.logistics_data_df.head())
         logging.info(self.order_data_df.head())

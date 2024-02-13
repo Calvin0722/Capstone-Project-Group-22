@@ -170,3 +170,6 @@ cleaned_data
 # Ignore DS_Store
 **/.DS_Store
 .DS_Store
+
+# Ignore Model
+src/lstm

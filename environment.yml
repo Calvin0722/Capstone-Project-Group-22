@@ -14,5 +14,6 @@ dependencies:
   - seaborn
   - scipy
   - statsmodels
+  - scikit-learn
 #  - pip:
 #    - torchviz
